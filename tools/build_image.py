@@ -5,8 +5,11 @@ makefun-newsimage — infografis berita dunia, 18 November 2026
 Digambar 100% deterministik dengan Pillow: tanpa jaringan, tanpa angka acak.
 Hasil selalu PNG 1024x1024, di bawah 1 MiB.
 
-Jalankan : python3 main.py
-Output   : /output/entry.png  (atau path lain via env MAKEFUN_OUT)
+Jalankan : python3 tools/build_image.py
+Output   : /output/entry.png  (atau path file lain via env MAKEFUN_OUT)
+Catatan  : entri yang dinilai adalah main.py, yang hanya menyalin entry.png
+           ke $MAKEFUN_OUTPUT_DIR tanpa Pillow. Rebuild byte-identik
+           bergantung pada font DejaVu/Liberation dan versi Pillow.
 """
 
 import math
@@ -49,6 +52,8 @@ def _find(names):
 
 _SANS = _find(("DejaVuSans.ttf", "LiberationSans-Regular.ttf", "Arial.ttf"))
 _BOLD = _find(("DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "ArialBold.ttf"))
+if _SANS is None or _BOLD is None:
+    raise SystemExit("error: font TTF tidak ditemukan; pasang DejaVu Sans atau Liberation Sans")
 
 _cache = {}
 
@@ -56,10 +61,7 @@ _cache = {}
 def font(size, bold=False):
     key = (size, bold)
     if key not in _cache:
-        try:
-            _cache[key] = ImageFont.truetype(_BOLD if bold else _SANS, size)
-        except Exception:
-            _cache[key] = ImageFont.load_default()
+        _cache[key] = ImageFont.truetype(_BOLD if bold else _SANS, size)
     return _cache[key]
 
 
@@ -360,7 +362,7 @@ def main():
 
     size = os.path.getsize(path)
     ok = size <= 1024 * 1024
-    print(f"[ok] {path}")
+    print(f"[{'ok' if ok else 'error'}] {path}")
     print(f"     resolusi : {img.size[0]}x{img.size[1]}")
     print(f"     ukuran   : {size:,} bytes ({size / 1024:.0f} KiB) — "
           f"{'DI BAWAH 1 MiB' if ok else 'MELEBIHI 1 MiB!'}")
