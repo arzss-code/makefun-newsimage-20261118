@@ -18,6 +18,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 W = H = 1024
+DATE_LABEL = "18 NOV 2026"
 
 # ------------------------------------------------------------------ palet
 BG       = (11, 14, 20)     # latar editorial gelap
@@ -219,15 +220,15 @@ def render_agenda(draw, y, dry=False):
 
 def draw_left_column(draw):
     top, bottom = 196, 972
-    blocks = [
-        (lambda y, dr, s=s: render_story(draw, y, s, dr), None) for s in STORIES
+    blocks: list = [
+        lambda y, dr, s=s: render_story(draw, y, s, dr) for s in STORIES
     ]
-    blocks.append((lambda y, dr: render_agenda(draw, y, dr), None))
-    heights = [fn(0, True) for fn, _ in blocks]
+    blocks.append(lambda y, dr: render_agenda(draw, y, dr))
+    heights = [fn(0, True) for fn in blocks]
     total = sum(heights)
-    gap = max(16.0, (bottom - top - total) / (len(blocks) - 1))
+    gap = max(16.0, (bottom - top - total) / max(1, len(blocks) - 1))
     y = float(top)
-    for i, (fn, _) in enumerate(blocks):
+    for i, fn in enumerate(blocks):
         fn(int(round(y)), False)
         y += heights[i]
         if i < len(blocks) - 1:
@@ -253,7 +254,7 @@ def draw_panel(draw):
 
     # kepala panel
     tracked(draw, (626, 210), "PANEL DATA", font(12, True), CYAN, 2)
-    draw.text((950, 210), "18 NOV 2026", font=font(11), fill=FAINT, anchor="rm")
+    draw.text((950, 210), DATE_LABEL, font=font(11), fill=FAINT, anchor="rm")
     section_sep(draw, 226)
 
     # --- A. bar chart pendapatan Nvidia ---
@@ -332,7 +333,7 @@ def draw_footer(draw):
     draw.line((48, 990, 976, 990), fill=PANEL_LN, width=1)
     draw.text((48, 1006), "MAKEFUN NEWS — INFOGRAFIS DETERMINISTIK • PYTHON + PIL • TANPA JARINGAN",
               font=font(11), fill=FAINT, anchor="lm")
-    draw.text((976, 1006), "18 NOV 2026 • HAL 01/01", font=font(11, True),
+    draw.text((976, 1006), DATE_LABEL + " • HAL 01/01", font=font(11, True),
               fill=FAINT, anchor="rm")
 
 
@@ -343,7 +344,10 @@ def output_path():
         os.makedirs(d, exist_ok=True)
     except OSError:
         d = os.path.join(os.getcwd(), "output")
-        os.makedirs(d, exist_ok=True)
+        try:
+            os.makedirs(d, exist_ok=True)
+        except OSError as exc:
+            raise SystemExit(f"error: tidak bisa membuat direktori output {d!r}: {exc}")
         p = os.path.join(d, os.path.basename(p) or "entry.png")
     return p
 
